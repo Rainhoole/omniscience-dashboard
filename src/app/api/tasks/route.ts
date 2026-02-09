@@ -7,10 +7,12 @@ import { verifySession, unauthorized } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") as
-    | "todo"
+    | "draft"
     | "in_progress"
-    | "review"
-    | "done"
+    | "pending_review"
+    | "approved"
+    | "archived"
+    | "failed"
     | null;
   const assignee = searchParams.get("assignee");
 
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     .values({
       title: body.title,
       description: body.description,
-      status: body.status || "todo",
+      status: body.status || "draft",
       priority: body.priority || "medium",
       assignee: body.assignee,
       tags: body.tags,

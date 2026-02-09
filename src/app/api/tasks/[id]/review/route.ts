@@ -31,7 +31,7 @@ export async function POST(
     const [task] = await db
       .update(tasks)
       .set({
-        status: "done",
+        status: "approved",
         firstTrySuccess: existing.reviewCount === 1,
         retroNote: retroNote || existing.retroNote,
         updatedAt: new Date(),

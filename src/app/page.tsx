@@ -6,7 +6,7 @@ import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { FeedRail } from "@/components/feed-rail";
 import KanbanBoard from "@/components/kanban-board";
-import { CalendarView } from "@/components/calendar-view";
+import { ChronologyView } from "@/components/chronology-view";
 import { ArchiveView } from "@/components/archive-view";
 
 type View = "Manifestation" | "Chronology" | "Archive";
@@ -102,7 +102,7 @@ export default function DashboardPage() {
                 <FeedRail />
               </>
             )}
-            {activeView === "Chronology" && <CalendarView />}
+            {activeView === "Chronology" && <ChronologyView />}
             {activeView === "Archive" && <ArchiveView />}
           </div>
         )}

@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getBotColor } from "@/lib/bot-colors";
+import TaskDetailModal from "@/components/task-detail-modal";
+import VoidEmptyState from "@/components/void-empty-state";
 
 interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: "todo" | "in_progress" | "review" | "done";
+  status: "draft" | "in_progress" | "pending_review" | "approved" | "archived" | "failed";
   priority: "low" | "medium" | "high" | "urgent";
   assignee: string | null;
   tags: string[] | null;
@@ -26,10 +28,10 @@ interface Bot {
 }
 
 const COLUMNS: { key: Task["status"]; label: string }[] = [
-  { key: "todo", label: "Pending" },
+  { key: "draft", label: "Draft" },
   { key: "in_progress", label: "In Progress" },
-  { key: "review", label: "Review" },
-  { key: "done", label: "Completed" },
+  { key: "pending_review", label: "Pending Review" },
+  { key: "approved", label: "Approved" },
 ];
 
 const PRIORITIES: Task["priority"][] = ["low", "medium", "high", "urgent"];
@@ -202,9 +204,11 @@ function NewTaskModal({
 function TaskCard({
   task,
   onMutated,
+  onClick,
 }: {
   task: Task;
   onMutated: () => void;
+  onClick: () => void;
 }) {
   const [reviewing, setReviewing] = useState(false);
 
@@ -212,8 +216,8 @@ function TaskCard({
     ? getBotColor(task.assignee)
     : "var(--color-moon-dim)";
 
-  const isDone = task.status === "done";
-  const isReview = task.status === "review";
+  const isDone = task.status === "approved";
+  const isReview = task.status === "pending_review";
   const isInProgress = task.status === "in_progress";
 
   async function handleReview(action: "approve" | "reject") {
@@ -233,7 +237,8 @@ function TaskCard({
 
   return (
     <div
-      className={`relative border border-border-subtle bg-void-depth rounded-[4px] p-4${
+      onClick={onClick}
+      className={`relative border border-border-subtle bg-void-depth rounded-[4px] p-4 cursor-pointer hover:border-moon-dim/40 transition-colors${
         isDone ? " opacity-60" : ""
       }`}
     >
@@ -297,14 +302,14 @@ function TaskCard({
       {isReview && (
         <div className="flex gap-2 mt-3 ml-2">
           <button
-            onClick={() => handleReview("reject")}
+            onClick={(e) => { e.stopPropagation(); handleReview("reject"); }}
             disabled={reviewing}
             className="px-2 py-1 text-[10px] text-moon-dim border border-border-subtle rounded-[4px] hover:text-moon-bone transition-colors disabled:opacity-40"
           >
             Reject
           </button>
           <button
-            onClick={() => handleReview("approve")}
+            onClick={(e) => { e.stopPropagation(); handleReview("approve"); }}
             disabled={reviewing}
             className="px-2 py-1 text-[10px] text-flesh border border-flesh-dim rounded-[4px] hover:bg-flesh-dark/30 transition-colors disabled:opacity-40"
           >
@@ -320,6 +325,7 @@ export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewTask, setShowNewTask] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -342,58 +348,73 @@ export default function KanbanBoard() {
     tasks: tasks.filter((t) => t.status === col.key),
   }));
 
+  const isEmpty = !loading && tasks.length === 0;
+
   return (
     <>
-      <div className="grid grid-cols-4 gap-6 px-8 py-6 min-h-0">
-        {grouped.map((col) => (
-          <div key={col.key} className="flex flex-col min-h-0">
-            {/* Column header */}
-            <div className="flex items-center justify-between border-b border-border-subtle pb-2 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] uppercase tracking-widest text-moon-dim">
-                  {col.label}
-                </span>
-                <span className="text-[11px] text-moon-dim">
-                  {col.tasks.length}
-                </span>
+      {isEmpty ? (
+        <VoidEmptyState onSummon={() => setShowNewTask(true)} />
+      ) : (
+        <div className="grid grid-cols-4 gap-6 px-8 py-6 min-h-0">
+          {grouped.map((col) => (
+            <div key={col.key} className="flex flex-col min-h-0">
+              {/* Column header */}
+              <div className="flex items-center justify-between border-b border-border-subtle pb-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] uppercase tracking-widest text-moon-dim">
+                    {col.label}
+                  </span>
+                  <span className="text-[11px] text-moon-dim">
+                    {col.tasks.length}
+                  </span>
+                </div>
+
+                {col.key === "draft" && (
+                  <button
+                    onClick={() => setShowNewTask(true)}
+                    className="w-5 h-5 flex items-center justify-center text-[13px] text-moon-dim border border-border-subtle rounded-[4px] hover:text-moon-bone hover:border-moon-dim transition-colors"
+                  >
+                    +
+                  </button>
+                )}
               </div>
 
-              {col.key === "todo" && (
-                <button
-                  onClick={() => setShowNewTask(true)}
-                  className="w-5 h-5 flex items-center justify-center text-[13px] text-moon-dim border border-border-subtle rounded-[4px] hover:text-moon-bone hover:border-moon-dim transition-colors"
-                >
-                  +
-                </button>
-              )}
+              {/* Cards */}
+              <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
+                {loading && col.tasks.length === 0 && (
+                  <span className="text-[11px] text-moon-dim">Loading…</span>
+                )}
+                {!loading && col.tasks.length === 0 && (
+                  <span className="text-[11px] text-moon-dim italic">
+                    No tasks
+                  </span>
+                )}
+                {col.tasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onMutated={fetchTasks}
+                    onClick={() => setSelectedTaskId(task.id)}
+                  />
+                ))}
+              </div>
             </div>
-
-            {/* Cards */}
-            <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
-              {loading && col.tasks.length === 0 && (
-                <span className="text-[11px] text-moon-dim">Loading…</span>
-              )}
-              {!loading && col.tasks.length === 0 && (
-                <span className="text-[11px] text-moon-dim italic">
-                  No tasks
-                </span>
-              )}
-              {col.tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onMutated={fetchTasks}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {showNewTask && (
         <NewTaskModal
           onClose={() => setShowNewTask(false)}
           onCreated={fetchTasks}
+        />
+      )}
+
+      {selectedTaskId && (
+        <TaskDetailModal
+          taskId={selectedTaskId}
+          onClose={() => setSelectedTaskId(null)}
+          onMutated={fetchTasks}
         />
       )}
     </>

@@ -40,12 +40,12 @@ export async function PATCH(
     updatedAt: new Date(),
   };
 
-  if (body.status === "review" && existing.status !== "review") {
+  if (body.status === "pending_review" && existing.status !== "pending_review") {
     updates.reviewCount = existing.reviewCount + 1;
   }
 
-  if (body.status === "done") {
-    updates.firstTrySuccess = existing.reviewCount + (body.status === "review" && existing.status !== "review" ? 1 : 0) === 1;
+  if (body.status === "approved") {
+    updates.firstTrySuccess = existing.reviewCount + (body.status === "pending_review" && existing.status !== "pending_review" ? 1 : 0) === 1;
   }
 
   const [task] = await db

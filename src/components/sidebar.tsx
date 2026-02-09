@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Bot {
   id: string;
@@ -21,6 +22,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function Sidebar() {
+  const router = useRouter();
   const [bots, setBots] = useState<Bot[]>([]);
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export function Sidebar() {
                 background:
                   "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.01) 100%)",
               }}
+              onClick={() => router.push(`/agent/${bot.id}`)}
             >
               <div
                 className="relative w-8 h-8 rounded-full border flex items-center justify-center text-[10px]"
