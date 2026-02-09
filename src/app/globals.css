@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-void: #030303;
+  --color-void-depth: #0a0a0a;
+  --color-moon-bone: #E3DDD1;
+  --color-moon-dim: #8A857A;
+  --color-flesh: #C4A496;
+  --color-flesh-dim: #6B5248;
+  --color-flesh-dark: #3D2C26;
+  --color-border-subtle: #1F1F1F;
+  --color-bot-alpha: #C4A496;
+  --color-bot-beta: #7D8FAD;
+  --color-bot-gamma: #8F9E8B;
+  --color-success: #8F9E8B;
+  --color-pending: #C4A496;
+  --color-error: #8B4B4B;
+
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--color-void);
+  color: var(--color-moon-bone);
+  font-family: var(--font-mono);
+  margin: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-void); }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
