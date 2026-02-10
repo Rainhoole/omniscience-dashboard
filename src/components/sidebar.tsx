@@ -14,6 +14,23 @@ interface Bot {
   lastSeen: string | null;
 }
 
+interface HealthSnapshot {
+  memoryPercent: number;
+  apiStatus: "Stable" | "Degraded" | "Critical";
+  onlineAgents: number;
+  totalAgents: number;
+  successRate: number;
+  recentErrorCount: number;
+  recentOps: Array<{
+    id: string;
+    action: string;
+    resourceType: string;
+    resourceId: string | null;
+    actorId: string | null;
+    createdAt: string;
+  }>;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   online: "#4CAF50",
   busy: "#FFA726",
@@ -21,15 +38,38 @@ const STATUS_COLORS: Record<string, string> = {
   offline: "#8B4B4B",
 };
 
+function formatOpTime(ts: string) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 export function Sidebar() {
   const router = useRouter();
   const [bots, setBots] = useState<Bot[]>([]);
+  const [health, setHealth] = useState<HealthSnapshot | null>(null);
 
   useEffect(() => {
-    fetch("/api/bots")
-      .then((r) => r.json())
-      .then(setBots)
-      .catch(() => {});
+    const fetchAll = () => {
+      fetch("/api/bots")
+        .then((r) => r.json())
+        .then(setBots)
+        .catch(() => {});
+
+      fetch("/api/system/health")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) setHealth(data);
+        })
+        .catch(() => {});
+    };
+
+    fetchAll();
+    const timer = setInterval(fetchAll, 10000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
@@ -87,11 +127,42 @@ export function Sidebar() {
           System Health
         </span>
         <div className="h-1 bg-[#222] rounded overflow-hidden">
-          <div className="w-[85%] h-full bg-moon-dim" />
+          <div
+            className="h-full bg-moon-dim transition-all duration-700"
+            style={{ width: `${health?.memoryPercent ?? 0}%` }}
+          />
         </div>
         <div className="flex justify-between mt-2 text-[10px] text-moon-dim">
-          <span>Memory: 85%</span>
-          <span>API: Stable</span>
+          <span>Memory: {health?.memoryPercent ?? 0}%</span>
+          <span>API: {health?.apiStatus ?? "—"}</span>
+        </div>
+        <div className="mt-2 text-[10px] text-moon-dim flex justify-between">
+          <span>
+            Agents: {health?.onlineAgents ?? 0}/{health?.totalAgents ?? bots.length}
+          </span>
+          <span>SR: {health?.successRate ?? 0}%</span>
+        </div>
+
+        <div className="mt-5">
+          <span className="block mb-2 text-xs text-moon-dim opacity-70 font-serif italic">
+            Recent Operator Actions
+          </span>
+          <div className="flex flex-col gap-2 max-h-28 overflow-y-auto pr-1">
+            {(health?.recentOps ?? []).map((op) => (
+              <div key={op.id} className="text-[10px] text-moon-dim border border-border-subtle rounded px-2 py-1">
+                <div className="text-moon-bone truncate">{op.action}</div>
+                <div className="opacity-70 truncate">
+                  {op.resourceType}
+                  {op.resourceId ? `:${op.resourceId.slice(0, 8)}` : ""}
+                  {" • "}
+                  {formatOpTime(op.createdAt)}
+                </div>
+              </div>
+            ))}
+            {(health?.recentOps ?? []).length === 0 && (
+              <div className="text-[10px] text-moon-dim opacity-50">No recent actions</div>
+            )}
+          </div>
         </div>
       </div>
     </aside>
