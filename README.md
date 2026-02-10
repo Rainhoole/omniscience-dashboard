@@ -1,217 +1,201 @@
 # Omniscience
 
-> AI Agent 管理后台 — 统一监控和管理多个全天候运行的 AI bot。
+AI operations control plane for autonomous agent teams.
+
+> **Positioning**: Omniscience = control plane, OpenClaw = execution engine.
+> This repo focuses on the open-source core.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)
-![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-C5F74F)
-![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ecf8e?logo=supabase)
+![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-## Features
+---
 
-**Manifestation** — Kanban Board
-- 四列看板：Todo → In Progress → Review → Done
-- 人派任务给 bot，bot 完成后提交 review，人 approve/reject
-- 追踪 reviewCount 和 firstTrySuccess
+## Why Omniscience
 
-**Chronology** — Calendar View
-- 月视图展示 cron 定时任务和一次性任务
-- 右侧 "Scheduled Queue" 显示未来 24h 任务
+When agent workflows scale, you need one place to:
+- plan and prioritize work (`tasks`)
+- observe real execution (`runs`, `activities`, `timeline`)
+- audit every meaningful action (`audit_logs`)
+- safely operate retries and recovery paths
 
-**Archive** — Memory File Browser
-- 树形文件浏览器（memory_node / system_log / artifact）
-- 内容预览：Markdown 渲染 + JSON 代码高亮
+Omniscience gives that operational layer while OpenClaw executes.
 
-**Activity Feed** — 实时操作流
-- 按 bot 颜色区分的时间线
-- 10 秒自动轮询
+---
 
-**Global Search** — 全局搜索
-- 跨 activities、tasks、memory files 搜索
+## Core Concepts
 
-**Bot Status Panel** — Agent 状态面板
-- 在线/忙碌/空闲/离线状态
-- Heartbeat API 上报
+- **Task**: business intent
+- **Run**: one execution attempt (`runId`)
+- **Activity**: event stream log for humans and agents
+- **Timeline Event**: chronology-facing event for visual tracking
+- **Audit Log**: immutable operator change trail
 
-## Tech Stack
+Rule of thumb: **if it isn't linked to `runId/taskId` and written to logs, it didn't happen.**
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS 4 (dark theme) |
-| Database | Supabase Postgres |
-| ORM | Drizzle ORM |
-| Auth | JWT (jose) — cookie 登录 + Bearer token |
-| Deploy | Zeabur |
+---
 
-## Project Structure
+## Architecture
 
-```
-src/
-├── app/
-│   ├── api/
-│   │   ├── activities/        # Activity CRUD
-│   │   ├── auth/login/        # Password login → JWT cookie
-│   │   ├── bots/              # Bot registry + heartbeat
-│   │   ├── memory/            # Memory file CRUD
-│   │   ├── scheduled-tasks/   # Cron & one-time tasks
-│   │   ├── search/            # Cross-entity search
-│   │   └── tasks/             # Task CRUD + review workflow
-│   ├── login/                 # Login page
-│   └── page.tsx               # Dashboard (3 views)
-├── components/
-│   ├── header.tsx             # Top bar + search
-│   ├── sidebar.tsx            # Bot status panel
-│   ├── kanban-board.tsx       # Task kanban
-│   ├── calendar-view.tsx      # Scheduled task calendar
-│   ├── archive-view.tsx       # Memory file browser
-│   ├── feed-rail.tsx          # Live activity stream
-│   ├── feed-rail-scheduled.tsx
-│   └── feed-rail-archive.tsx
-├── lib/
-│   ├── auth.ts                # JWT helpers
-│   ├── bot-colors.ts          # Bot → color mapping
-│   ├── activity-reporter.js   # Bot 上报插件
-│   └── db/
-│       ├── schema.ts          # Drizzle schema (6 tables)
-│       ├── index.ts           # DB client
-│       └── seed.ts            # Sample data
-└── middleware.ts               # Route protection
+```text
+[Omniscience UI/API]
+        |
+        | (events/ops adapters)
+        v
+ [OpenClaw Runtime]
+        |
+        v
+ [Postgres: tasks, activities, timeline_events, audit_logs]
 ```
 
-## Database Schema
+Layers:
+1. **Control Plane** (this repo): dashboard, API, policy checks, trace UX
+2. **Execution Plane** (OpenClaw): tools, sessions, cron, retries
+3. **Data Plane** (Postgres): event/audit persistence
+4. **Safety Plane**: approval gates for high-risk actions
 
-```
-activities      — type, description, status, source, timestamp, metadata
-tasks           — title, status, priority, assignee, reviewCount, firstTrySuccess, retroNote
-scheduled_tasks — title, type, cronExpression, status, nextRun
-memory_files    — name, content, path, type, size
-bots            — name, symbol, role, color, status, currentTask, apiToken
-```
+---
 
-## Getting Started
+## Quick Start (10 minutes)
 
-### 1. Clone & Install
+### Prerequisites
+- Docker + Docker Compose
+- Node.js 22+ (optional for local dev without Docker)
+
+### 1) Clone
 
 ```bash
 git clone https://github.com/Rainhoole/omniscience-dashboard.git
 cd omniscience-dashboard
-npm install
 ```
 
-### 2. Configure Environment
+### 2) Configure env
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your Supabase connection string:
-
-```env
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
-API_SECRET=your-random-secret-string
-ADMIN_PASSWORD=your-login-password
-
-# OpenClaw adapter ingress token (for /api/openclaw/events)
-OPENCLAW_ADAPTER_TOKEN=replace-with-strong-random-token
-```
-
-### 3. Initialize Database
+### 3) Start stack
 
 ```bash
-npm run db:push    # Sync schema to Supabase
-npm run db:seed    # Insert sample data
+make up
 ```
 
-### 4. Run
+### 4) Initialize schema/data
 
 ```bash
-npm run dev        # http://localhost:3000
+make db-push
+make db-seed
 ```
 
-## API Authentication
+### 5) Open app
 
-| Caller | Method | Header |
-|--------|--------|--------|
-| Dashboard (human) | Cookie | `omniscience_session` JWT cookie via `/api/auth/login` |
-| Bot agent | Bearer token | `Authorization: Bearer <bot_api_token>` |
+- http://localhost:3200/login
 
-### Bot Activity Reporting
+---
 
-```js
-import { report, configure } from './lib/activity-reporter';
+## OpenClaw Integration
 
-configure({ token: 'tok_alpha_dev_000001' });
+### Ingest execution events
 
-report('file_ops', 'Created user-profile.tsx', 'success', 'Alpha', {
-  path: 'src/user-profile.tsx'
-});
-```
+`POST /api/openclaw/events`
 
-### OpenClaw Integration (P0 adapter)
-
-Use `POST /api/openclaw/events` to ingest OpenClaw run events into:
+Writes into:
 - `activities`
 - `timeline_events`
-- optional task status sync (`taskId + taskStatus`)
+- optional task status sync
 
-Use `POST /api/openclaw/ops` to ingest operator/ops actions (deploy/migrate/restart/rollback/git_push) into:
+### Ingest operator/ops actions
+
+`POST /api/openclaw/ops`
+
+Writes into:
 - `audit_logs`
 - `activities`
 - `timeline_events`
 
-Auth header:
+Auth header for both:
 
 ```http
 x-openclaw-token: <OPENCLAW_ADAPTER_TOKEN>
 ```
 
-Example payload:
+### Retry lifecycle
 
-```json
-{
-  "type": "task.completed",
-  "runId": "run_123",
-  "taskId": "<task-uuid>",
-  "agentId": "main",
-  "description": "OpenClaw run finished",
-  "taskStatus": "approved",
-  "metadata": { "source": "openclaw" }
-}
+`POST /api/openclaw/runs/[runId]/retry`
+
+- triggers a new retry run chain
+- links old/new run metadata for traceability
+- updates activity/timeline/audit for full visibility
+
+---
+
+## Repository Layout
+
+```text
+src/
+  app/api/                     # API routes
+  components/                  # dashboard UI
+  lib/                         # auth, db, ops-log helpers
+scripts/
+  ops-log.sh                   # simple ops event sender
+examples/
+  retry-run-chain/             # sample payloads and flow
+docs/
+  OPERATIONS-HARDENING.md
+  ROADMAP-v1.md
+  OPEN-SOURCE-PLAN.md
 ```
 
+---
 
-## Scripts
+## Development Commands
 
 | Command | Description |
-|---------|------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Production build |
-| `npm run db:push` | Push schema to database |
-| `npm run db:seed` | Seed sample data |
-| `npm run db:studio` | Open Drizzle Studio |
-| `npm run db:generate` | Generate migrations |
-| `npm run lint` | Run ESLint |
+|---|---|
+| `npm run dev` | dev server |
+| `npm run build` | production build |
+| `npm run db:push` | sync schema |
+| `npm run db:seed` | seed dev data |
+| `npm run lint` | lint |
 
-## Deploy (Zeabur)
+Make shortcuts:
 
-1. Push repo to GitHub
-2. Connect repo in [Zeabur](https://zeabur.com)
-3. Add environment variables: `DATABASE_URL`, `API_SECRET`, `ADMIN_PASSWORD`
-4. Zeabur auto-detects Next.js and deploys
+| Command | Description |
+|---|---|
+| `make up` | start postgres + app |
+| `make down` | stop stack |
+| `make logs` | stream app logs |
+| `make db-push` | push schema inside app container |
+| `make db-seed` | seed inside app container |
 
-## Production Operations & Security
+---
 
-See: [`docs/OPERATIONS-HARDENING.md`](docs/OPERATIONS-HARDENING.md)
+## Open Source vs Cloud
 
-Includes:
-- safe migration + rollback process
-- status mapping guidance
-- HTTPS / non-root / rate-limit / fail2ban baseline
-- optional TOTP 2FA config
+### Open-source Core (this repo)
+- task/run/audit model
+- dashboard and APIs
+- OpenClaw adapters/events
+- self-hosting support
+
+### Planned Cloud / Enterprise (future)
+- managed hosting + SLA
+- SSO / advanced RBAC
+- org-level policy controls
+- enterprise support
+
+---
+
+## Contributing
+
+Start here:
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Open Source Plan](docs/OPEN-SOURCE-PLAN.md)
+
+---
 
 ## License
 
-MIT
+Apache-2.0. See [LICENSE](LICENSE).

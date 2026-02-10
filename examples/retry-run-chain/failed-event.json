@@ -1,0 +1,10 @@
+{
+  "type": "task.failed",
+  "runId": "demo_failed_run_001",
+  "taskId": "00000000-0000-0000-0000-000000000000",
+  "agentId": "main",
+  "description": "Demo failed run for retry chain",
+  "metadata": {
+    "source": "example"
+  }
+}

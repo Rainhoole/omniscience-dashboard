@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: omniscience-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: omniscience
+      POSTGRES_USER: omniscience
+      POSTGRES_PASSWORD: omniscience
+    ports:
+      - "5433:5432"
+    volumes:
+      - omniscience_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omniscience -d omniscience"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: omniscience-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://omniscience:omniscience@postgres:5432/omniscience
+      PORT: 3200
+    ports:
+      - "3200:3200"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  omniscience_pgdata:
