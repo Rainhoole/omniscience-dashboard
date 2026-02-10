@@ -166,6 +166,16 @@ report('file_ops', 'Created user-profile.tsx', 'success', 'Alpha', {
 3. Add environment variables: `DATABASE_URL`, `API_SECRET`, `ADMIN_PASSWORD`
 4. Zeabur auto-detects Next.js and deploys
 
+## Production Operations & Security
+
+See: [`docs/OPERATIONS-HARDENING.md`](docs/OPERATIONS-HARDENING.md)
+
+Includes:
+- safe migration + rollback process
+- status mapping guidance
+- HTTPS / non-root / rate-limit / fail2ban baseline
+- optional TOTP 2FA config
+
 ## License
 
 MIT
