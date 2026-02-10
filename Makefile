@@ -1,4 +1,4 @@
-.PHONY: up down logs db-push db-seed shell
+.PHONY: up down logs db-push db-seed shell verify
 
 up:
 	docker compose up -d --build
@@ -17,3 +17,6 @@ db-seed:
 
 shell:
 	docker compose exec app sh
+
+verify:
+	./scripts/verify-bootstrap.sh

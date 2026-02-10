@@ -88,7 +88,13 @@ make db-push
 make db-seed
 ```
 
-### 5) Open app
+### 5) Verify bootstrap
+
+```bash
+make verify
+```
+
+### 6) Open app
 
 - http://localhost:3200/login
 
@@ -168,6 +174,7 @@ Make shortcuts:
 | `make logs` | stream app logs |
 | `make db-push` | push schema inside app container |
 | `make db-seed` | seed inside app container |
+| `make verify` | run local bootstrap verification |
 
 ---
 
