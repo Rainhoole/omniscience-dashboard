@@ -182,6 +182,14 @@ Make shortcuts:
 | `make verify` | run local bootstrap verification |
 | `make smoke-retry` | run retry-chain smoke check |
 
+### Optional CI smoke secrets
+
+To enable retry-chain smoke in GitHub Actions, set repo secrets:
+- `CI_SMOKE_BASE_URL` (e.g. `https://omniscience.rainhoole.com`)
+- `CI_OPENCLAW_ADAPTER_TOKEN`
+- `CI_ADMIN_SESSION_COOKIE` (optional; enables full `/retry` endpoint check)
+- `CI_SMOKE_TASK_ID` (optional; defaults to all-zero UUID)
+
 ---
 
 ## Open Source vs Cloud

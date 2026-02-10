@@ -28,6 +28,12 @@ Expected:
 - retry endpoint returns 200 when cookie is provided
 - run linkage visible in trace (`retriedFromRunId` / `retryRunId`)
 
+For GitHub Actions smoke, configure secrets:
+- `CI_SMOKE_BASE_URL`
+- `CI_OPENCLAW_ADAPTER_TOKEN`
+- `CI_ADMIN_SESSION_COOKIE` (optional)
+- `CI_SMOKE_TASK_ID` (optional)
+
 ## 3) Deploy + health
 
 ```bash

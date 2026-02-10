@@ -26,3 +26,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Retry smoke (optional)
+        if: ${{ secrets.CI_SMOKE_BASE_URL != '' && secrets.CI_OPENCLAW_ADAPTER_TOKEN != '' }}
+        env:
+          OMNISCIENCE_BASE_URL: ${{ secrets.CI_SMOKE_BASE_URL }}
+          OPENCLAW_ADAPTER_TOKEN: ${{ secrets.CI_OPENCLAW_ADAPTER_TOKEN }}
+          ADMIN_SESSION_COOKIE: ${{ secrets.CI_ADMIN_SESSION_COOKIE }}
+          SMOKE_TASK_ID: ${{ secrets.CI_SMOKE_TASK_ID }}
+        run: npm run smoke:retry
+
+      - name: Retry smoke skipped
+        if: ${{ !(secrets.CI_SMOKE_BASE_URL != '' && secrets.CI_OPENCLAW_ADAPTER_TOKEN != '') }}
+        run: |
+          echo "Retry smoke skipped: configure CI_SMOKE_BASE_URL + CI_OPENCLAW_ADAPTER_TOKEN"
