@@ -13,15 +13,8 @@ interface TimelineEvent {
   metadata: unknown;
 }
 
-type AgentFilter = "all" | "alpha" | "beta" | "gamma";
+type AgentFilter = "all" | string;
 type RangeFilter = "24h" | "7d" | "30d";
-
-const AGENTS: { value: AgentFilter; label: string }[] = [
-  { value: "all", label: "All Agents" },
-  { value: "alpha", label: "Alpha" },
-  { value: "beta", label: "Beta" },
-  { value: "gamma", label: "Gamma" },
-];
 
 const RANGES: RangeFilter[] = ["24h", "7d", "30d"];
 
@@ -144,6 +137,13 @@ export function ChronologyView() {
   const groups = groupEvents(events);
   const stats = computeStats(events);
 
+  const agentOptions: { value: AgentFilter; label: string }[] = [
+    { value: "all", label: "All Agents" },
+    ...Array.from(new Set(events.map((e) => e.agentId).filter(Boolean) as string[]))
+      .sort()
+      .map((v) => ({ value: v, label: v })),
+  ];
+
   return (
     <div className="flex flex-1 h-full overflow-hidden">
       {/* Main timeline area */}
@@ -155,7 +155,7 @@ export function ChronologyView() {
             onChange={(e) => setAgent(e.target.value as AgentFilter)}
             className="bg-void-depth border border-border-subtle text-moon-bone text-[11px] font-mono px-3 py-1.5 rounded-sm focus:outline-none focus:border-flesh-dim appearance-none cursor-pointer"
           >
-            {AGENTS.map((a) => (
+            {agentOptions.map((a) => (
               <option key={a.value} value={a.value}>
                 {a.label}
               </option>

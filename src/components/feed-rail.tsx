@@ -69,6 +69,7 @@ export function FeedRail() {
   const [traceLoading, setTraceLoading] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     const fetchActivities = () => {
@@ -111,6 +112,24 @@ export function FeedRail() {
       .then((data) => setTaskDetail(data))
       .catch(() => setTaskDetail(null));
   }, [selectedTaskId]);
+
+  async function handleRetryRun() {
+    if (!selectedRunId || retrying) return;
+    setRetrying(true);
+    try {
+      await fetch(`/api/openclaw/runs/${encodeURIComponent(selectedRunId)}/retry`, {
+        method: "POST",
+      });
+      const [traceRes, actRes] = await Promise.all([
+        fetch(`/api/openclaw/runs/${encodeURIComponent(selectedRunId)}`),
+        fetch(`/api/activities?limit=30&runId=${encodeURIComponent(selectedRunId)}`),
+      ]);
+      if (traceRes.ok) setRunTrace(await traceRes.json());
+      if (actRes.ok) setActivities(await actRes.json());
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   return (
     <aside
@@ -260,6 +279,15 @@ export function FeedRail() {
                     {taskDetail.assignee ? `assignee: ${taskDetail.assignee}` : "unassigned"}
                   </div>
                 </div>
+              )}
+              {runTrace.activities.some((a) => a.status === "error") && (
+                <button
+                  onClick={handleRetryRun}
+                  disabled={retrying}
+                  className="self-start px-2 py-[2px] border border-red-300 rounded text-red-300 hover:text-red-200 disabled:opacity-50"
+                >
+                  {retrying ? "Retrying..." : "Retry Latest Failed Run"}
+                </button>
               )}
               <button
                 onClick={() => {
