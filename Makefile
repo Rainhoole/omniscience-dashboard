@@ -1,4 +1,4 @@
-.PHONY: up down logs db-push db-seed shell verify
+.PHONY: up down logs db-push db-seed shell verify smoke-retry
 
 up:
 	docker compose up -d --build
@@ -20,3 +20,6 @@ shell:
 
 verify:
 	./scripts/verify-bootstrap.sh
+
+smoke-retry:
+	./scripts/smoke-retry-chain.sh

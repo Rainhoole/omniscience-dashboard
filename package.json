@@ -12,7 +12,9 @@
     "db:push": "drizzle-kit push",
     "db:seed": "npx tsx src/lib/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "verify": "bash scripts/verify-bootstrap.sh"
+    "verify": "bash scripts/verify-bootstrap.sh",
+    "verify:full": "npm run verify && npm run lint && npm run build",
+    "smoke:retry": "bash scripts/smoke-retry-chain.sh"
   },
   "dependencies": {
     "cookie": "^1.1.1",

@@ -163,6 +163,9 @@ docs/
 |---|---|
 | `npm run dev` | dev server |
 | `npm run build` | production build |
+| `npm run verify` | bootstrap reachability check |
+| `npm run verify:full` | verify + lint + build |
+| `npm run smoke:retry` | retry-chain smoke script |
 | `npm run db:push` | sync schema |
 | `npm run db:seed` | seed dev data |
 | `npm run lint` | lint |
@@ -177,6 +180,7 @@ Make shortcuts:
 | `make db-push` | push schema inside app container |
 | `make db-seed` | seed inside app container |
 | `make verify` | run local bootstrap verification |
+| `make smoke-retry` | run retry-chain smoke check |
 
 ---
 
@@ -202,6 +206,7 @@ Start here:
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Open Source Plan](docs/OPEN-SOURCE-PLAN.md)
+- [Release Checklist](docs/RELEASE-CHECKLIST.md)
 
 ---
 
