@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { verifySession, unauthorized } from "@/lib/auth";
+import { logOperatorAction } from "@/lib/ops-log";
 
 export async function POST(
   request: NextRequest,
@@ -39,6 +40,18 @@ export async function POST(
       .where(eq(tasks.id, id))
       .returning();
 
+    await logOperatorAction({
+      actorId: (session as { userId?: string }).userId,
+      action: "review_approve",
+      resourceType: "task",
+      resourceId: id,
+      before: { status: existing.status, reviewCount: existing.reviewCount },
+      after: { status: "approved", firstTrySuccess: existing.reviewCount === 1 },
+      description: `Review approved for task ${id.slice(0, 8)}`,
+      status: "success",
+      taskId: id,
+    });
+
     return NextResponse.json(task);
   }
 
@@ -52,6 +65,18 @@ export async function POST(
       })
       .where(eq(tasks.id, id))
       .returning();
+
+    await logOperatorAction({
+      actorId: (session as { userId?: string }).userId,
+      action: "review_reject",
+      resourceType: "task",
+      resourceId: id,
+      before: { status: existing.status, reviewCount: existing.reviewCount },
+      after: { status: "in_progress", reviewCount: existing.reviewCount + 1 },
+      description: `Review rejected for task ${id.slice(0, 8)}`,
+      status: "warn",
+      taskId: id,
+    });
 
     return NextResponse.json(task);
   }
