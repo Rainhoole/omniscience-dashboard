@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { FeedRail } from "@/components/feed-rail";
@@ -17,7 +16,6 @@ export default function DashboardPage() {
   const [activeView, setActiveView] = useState<View>("Manifestation");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResultsProps["results"] | null>(null);
-  const router = useRouter();
 
   const handleSearchSubmit = useCallback(async (q: string) => {
     if (!q.trim()) {

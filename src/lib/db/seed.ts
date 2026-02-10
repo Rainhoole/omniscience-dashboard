@@ -37,7 +37,7 @@ async function seed() {
   await db.delete(bots);
 
   // --- Bots ---
-  const [alpha, beta, gamma] = await db
+  await db
     .insert(bots)
     .values([
       {

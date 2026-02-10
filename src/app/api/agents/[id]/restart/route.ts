@@ -41,6 +41,7 @@ export async function POST(
     source: bot.name,
   });
 
-  const { apiToken: _, ...safe } = restarted;
+  const { apiToken, ...safe } = restarted;
+  void apiToken;
   return NextResponse.json(safe);
 }

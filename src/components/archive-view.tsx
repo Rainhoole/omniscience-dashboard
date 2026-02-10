@@ -222,7 +222,6 @@ function ContentViewer({
 }
 
 export function ArchiveView() {
-  const [files, setFiles] = useState<MemoryFile[]>([]);
   const [folders, setFolders] = useState<TreeFolder[]>([]);
   const [selectedFile, setSelectedFile] = useState<MemoryFile | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
@@ -233,7 +232,6 @@ export function ArchiveView() {
     fetch("/api/memory")
       .then((r) => r.json())
       .then((data: MemoryFile[]) => {
-        setFiles(data);
         setFolders(groupByType(data));
       })
       .catch(() => {});

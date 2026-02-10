@@ -15,7 +15,8 @@ export async function GET(
     return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   }
 
-  const { apiToken: _, ...safe } = bot;
+  const { apiToken, ...safe } = bot;
+  void apiToken;
   return NextResponse.json(safe);
 }
 
@@ -55,6 +56,7 @@ export async function PATCH(
     after: updates,
   });
 
-  const { apiToken: _, ...safe } = updated;
+  const { apiToken, ...safe } = updated;
+  void apiToken;
   return NextResponse.json(safe);
 }

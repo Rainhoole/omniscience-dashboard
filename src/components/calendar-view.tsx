@@ -51,27 +51,6 @@ function getStartDayOfWeek(year: number, month: number): number {
   return day === 0 ? 6 : day - 1;
 }
 
-function parseCronDaysOfWeek(cron: string): number[] {
-  const parts = cron.trim().split(/\s+/);
-  if (parts.length < 5) return [];
-  const dowField = parts[4];
-  if (dowField === "*") return [0, 1, 2, 3, 4, 5, 6];
-
-  const days: number[] = [];
-  for (const segment of dowField.split(",")) {
-    if (segment.includes("-")) {
-      const [start, end] = segment.split("-").map(Number);
-      for (let i = start; i <= end; i++) days.push(i % 7);
-    } else if (segment.includes("/")) {
-      const [, step] = segment.split("/").map(Number);
-      for (let i = 0; i < 7; i += step) days.push(i);
-    } else {
-      days.push(Number(segment) % 7);
-    }
-  }
-  return days;
-}
-
 function cronMatchesDate(cron: string, date: Date): boolean {
   const parts = cron.trim().split(/\s+/);
   if (parts.length < 5) return false;
