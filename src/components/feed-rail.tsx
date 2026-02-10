@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { getBotColor } from "@/lib/bot-colors";
 
+interface ActivityMetadata {
+  runId?: string;
+  taskId?: string;
+  agentId?: string;
+  [key: string]: unknown;
+}
+
 interface Activity {
   id: string;
   type: string;
@@ -10,7 +17,20 @@ interface Activity {
   status: string | null;
   source: string;
   timestamp: string;
-  metadata: unknown;
+  metadata: ActivityMetadata | null;
+}
+
+interface RunTraceResponse {
+  runId: string;
+  activities: Activity[];
+  timelineEvents: Array<{
+    id: string;
+    type: string;
+    title: string;
+    description: string | null;
+    occurredAt: string;
+    metadata: ActivityMetadata | null;
+  }>;
 }
 
 function formatTime(ts: string): string {
@@ -35,6 +55,9 @@ function formatTime(ts: string): string {
 
 export function FeedRail() {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [runTrace, setRunTrace] = useState<RunTraceResponse | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
 
   useEffect(() => {
     const fetchActivities = () => {
@@ -48,6 +71,20 @@ export function FeedRail() {
     const interval = setInterval(fetchActivities, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!selectedRunId) {
+      setRunTrace(null);
+      return;
+    }
+
+    setTraceLoading(true);
+    fetch(`/api/openclaw/runs/${encodeURIComponent(selectedRunId)}`)
+      .then((r) => r.json())
+      .then((data) => setRunTrace(data))
+      .catch(() => setRunTrace(null))
+      .finally(() => setTraceLoading(false));
+  }, [selectedRunId]);
 
   return (
     <aside
@@ -70,6 +107,9 @@ export function FeedRail() {
 
         {activities.map((item) => {
           const color = getBotColor(item.source);
+          const runId = item.metadata?.runId;
+          const taskId = item.metadata?.taskId;
+
           return (
             <div
               key={item.id}
@@ -82,7 +122,7 @@ export function FeedRail() {
                   boxShadow: `0 0 10px ${color}40`,
                 }}
               />
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 min-w-0">
                 <span className="text-moon-bone">{item.description}</span>
                 <div className="text-moon-dim text-[10px]">
                   <span
@@ -94,6 +134,24 @@ export function FeedRail() {
                   {" "}&bull;{" "}
                   {formatTime(item.timestamp)}
                 </div>
+                {(runId || taskId) && (
+                  <div className="flex flex-wrap gap-2 pt-1 text-[9px] font-mono">
+                    {runId && (
+                      <button
+                        onClick={() => setSelectedRunId(runId)}
+                        className="px-2 py-[2px] border border-border-subtle rounded text-moon-dim hover:text-moon-bone transition-colors"
+                        title="View run trace"
+                      >
+                        run:{runId.slice(0, 18)}
+                      </button>
+                    )}
+                    {taskId && (
+                      <span className="px-2 py-[2px] border border-border-subtle rounded text-moon-dim">
+                        task:{taskId.slice(0, 8)}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -105,6 +163,37 @@ export function FeedRail() {
           </div>
         )}
       </div>
+
+      {selectedRunId && (
+        <div className="border-t border-border-subtle p-4 bg-black/30">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-moon-dim">
+              Run Trace
+            </span>
+            <button
+              onClick={() => setSelectedRunId(null)}
+              className="text-[10px] text-moon-dim hover:text-moon-bone"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="text-[10px] font-mono text-moon-bone mb-2 break-all">
+            {selectedRunId}
+          </div>
+
+          {traceLoading ? (
+            <div className="text-[10px] text-moon-dim">Loading trace...</div>
+          ) : !runTrace ? (
+            <div className="text-[10px] text-moon-dim">No trace data.</div>
+          ) : (
+            <div className="text-[10px] text-moon-dim flex flex-col gap-1">
+              <span>Activities: {runTrace.activities.length}</span>
+              <span>Timeline Events: {runTrace.timelineEvents.length}</span>
+            </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 }
