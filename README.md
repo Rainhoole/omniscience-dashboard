@@ -37,15 +37,42 @@ Rule of thumb: **if it isn't linked to `runId/taskId` and written to logs, it di
 
 ## Architecture
 
-```text
-[Omniscience UI/API]
-        |
-        | (events/ops adapters)
-        v
- [OpenClaw Runtime]
-        |
-        v
- [Postgres: tasks, activities, timeline_events, audit_logs]
+```mermaid
+flowchart TB
+      User[User / API Client]
+
+      subgraph ControlPlane[Control Plane]
+          UI[Omniscience UI]
+          API[Dashboard API]
+          Policy[Policy Checks & Trace UX]
+      end
+
+      subgraph ExecutionPlane[Execution Plane]
+          OpenClaw[OpenClaw Runtime]
+          Agents[Tools / Sessions / Retries]
+      end
+
+      subgraph DataPlane[Data Plane]
+          DB[(Postgres)]
+          Tables[tasks · activities · timeline_events · audit_logs]
+      end
+
+      subgraph SafetyPlane[Safety Plane]
+          Approvals[Approval Gates]
+          Audit[Audit Logging]
+      end
+
+      User --> UI
+      UI --> API
+      API --> OpenClaw
+      OpenClaw --> Agents
+
+      OpenClaw --> DB
+      DB --> Tables
+
+      API --> Policy
+      Policy --> Approvals
+      OpenClaw --> Audit
 ```
 
 Layers:

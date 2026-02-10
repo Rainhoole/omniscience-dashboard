@@ -1,0 +1,35 @@
+flowchart TB
+    User[User / API Client]
+
+    subgraph ControlPlane[Control Plane]
+        API[Dashboard API]
+        Scheduler[Task Scheduler]
+    end
+
+    subgraph ExecutionPlane[Execution Plane]
+        Dispatcher[Task Dispatcher]
+        Agents[Execution Agents]
+    end
+
+    subgraph DataPlane[Data Plane]
+        DB[(Metadata DB)]
+        Logs[(Logs & Metrics)]
+    end
+
+    subgraph SafetyPlane[Safety Plane]
+        Auth[AuthN / AuthZ]
+        Audit[Audit & Policy Engine]
+    end
+
+    User --> API
+    API --> Scheduler
+    Scheduler --> Dispatcher
+    Dispatcher --> Agents
+
+    Agents --> Logs
+    Scheduler --> DB
+
+    API --> Auth
+    Dispatcher --> Audit
+
+    DB --> Audit
