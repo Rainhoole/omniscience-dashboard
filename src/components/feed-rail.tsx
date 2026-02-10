@@ -7,6 +7,8 @@ interface ActivityMetadata {
   runId?: string;
   taskId?: string;
   agentId?: string;
+  retryRunId?: string;
+  retriedFromRunId?: string;
   [key: string]: unknown;
 }
 
@@ -117,12 +119,20 @@ export function FeedRail() {
     if (!selectedRunId || retrying) return;
     setRetrying(true);
     try {
-      await fetch(`/api/openclaw/runs/${encodeURIComponent(selectedRunId)}/retry`, {
+      const retryRes = await fetch(`/api/openclaw/runs/${encodeURIComponent(selectedRunId)}/retry`, {
         method: "POST",
       });
+
+      const retryData = retryRes.ok ? await retryRes.json() : null;
+      const nextRunId = typeof retryData?.retryRunId === "string" ? retryData.retryRunId : selectedRunId;
+
+      if (nextRunId !== selectedRunId) {
+        setSelectedRunId(nextRunId);
+      }
+
       const [traceRes, actRes] = await Promise.all([
-        fetch(`/api/openclaw/runs/${encodeURIComponent(selectedRunId)}`),
-        fetch(`/api/activities?limit=30&runId=${encodeURIComponent(selectedRunId)}`),
+        fetch(`/api/openclaw/runs/${encodeURIComponent(nextRunId)}`),
+        fetch("/api/activities?limit=30"),
       ]);
       if (traceRes.ok) setRunTrace(await traceRes.json());
       if (actRes.ok) setActivities(await actRes.json());
@@ -154,6 +164,9 @@ export function FeedRail() {
           const color = getBotColor(item.source);
           const runId = item.metadata?.runId;
           const taskId = item.metadata?.taskId;
+          const retryRunId = typeof item.metadata?.retryRunId === "string" ? item.metadata.retryRunId : null;
+          const retriedFromRunId =
+            typeof item.metadata?.retriedFromRunId === "string" ? item.metadata.retriedFromRunId : null;
 
           return (
             <div
@@ -183,7 +196,7 @@ export function FeedRail() {
                   {" "}&bull;{" "}
                   {formatTime(item.timestamp)}
                 </div>
-                {(runId || taskId) && (
+                {(runId || taskId || retryRunId || retriedFromRunId) && (
                   <div className="flex flex-wrap gap-2 pt-1 text-[9px] font-mono">
                     {runId && (
                       <button
@@ -192,6 +205,24 @@ export function FeedRail() {
                         title="View run trace"
                       >
                         run:{runId.slice(0, 18)}
+                      </button>
+                    )}
+                    {retryRunId && (
+                      <button
+                        onClick={() => setSelectedRunId(retryRunId)}
+                        className="px-2 py-[2px] border border-border-subtle rounded text-amber-300 hover:text-amber-200 transition-colors"
+                        title="Open retriggered run"
+                      >
+                        retry:{retryRunId.slice(0, 18)}
+                      </button>
+                    )}
+                    {retriedFromRunId && (
+                      <button
+                        onClick={() => setSelectedRunId(retriedFromRunId)}
+                        className="px-2 py-[2px] border border-border-subtle rounded text-moon-dim hover:text-moon-bone transition-colors"
+                        title="Open original run"
+                      >
+                        from:{retriedFromRunId.slice(0, 10)}
                       </button>
                     )}
                     {taskId && (
@@ -248,6 +279,37 @@ export function FeedRail() {
                 </span>
               </div>
               <span>Timeline Events: {runTrace.timelineEvents.length}</span>
+              {(() => {
+                const retryOrigin = runTrace.activities.find(
+                  (a) => typeof a.metadata?.retriedFromRunId === "string"
+                )?.metadata?.retriedFromRunId as string | undefined;
+                const retryTarget = runTrace.activities.find(
+                  (a) => typeof a.metadata?.retryRunId === "string"
+                )?.metadata?.retryRunId as string | undefined;
+
+                if (!retryOrigin && !retryTarget) return null;
+
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    {retryOrigin && (
+                      <button
+                        onClick={() => setSelectedRunId(retryOrigin)}
+                        className="px-2 py-[2px] border border-border-subtle rounded hover:text-moon-bone"
+                      >
+                        from:{retryOrigin.slice(0, 18)}
+                      </button>
+                    )}
+                    {retryTarget && (
+                      <button
+                        onClick={() => setSelectedRunId(retryTarget)}
+                        className="px-2 py-[2px] border border-border-subtle rounded text-amber-300 hover:text-amber-200"
+                      >
+                        retry:{retryTarget.slice(0, 18)}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="max-h-32 overflow-y-auto border border-border-subtle rounded p-2 flex flex-col gap-1">
                 {runTrace.activities.slice(0, 8).map((a) => (
                   <div key={a.id} className="flex items-center justify-between gap-2">
