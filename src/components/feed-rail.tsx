@@ -33,6 +33,15 @@ interface RunTraceResponse {
   }>;
 }
 
+interface TaskDetail {
+  id: string;
+  title: string;
+  status: string;
+  assignee: string | null;
+  priority: string;
+  updatedAt: string;
+}
+
 function formatTime(ts: string): string {
   const date = new Date(ts);
   const now = new Date();
@@ -58,6 +67,8 @@ export function FeedRail() {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [runTrace, setRunTrace] = useState<RunTraceResponse | null>(null);
   const [traceLoading, setTraceLoading] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
 
   useEffect(() => {
     const fetchActivities = () => {
@@ -88,6 +99,18 @@ export function FeedRail() {
       .catch(() => setRunTrace(null))
       .finally(() => setTraceLoading(false));
   }, [selectedRunId]);
+
+  useEffect(() => {
+    if (!selectedTaskId) {
+      setTaskDetail(null);
+      return;
+    }
+
+    fetch(`/api/tasks/${encodeURIComponent(selectedTaskId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setTaskDetail(data))
+      .catch(() => setTaskDetail(null));
+  }, [selectedTaskId]);
 
   return (
     <aside
@@ -153,9 +176,13 @@ export function FeedRail() {
                       </button>
                     )}
                     {taskId && (
-                      <span className="px-2 py-[2px] border border-border-subtle rounded text-moon-dim">
+                      <button
+                        onClick={() => setSelectedTaskId(taskId)}
+                        className="px-2 py-[2px] border border-border-subtle rounded text-moon-dim hover:text-moon-bone transition-colors"
+                        title="Open task quick detail"
+                      >
                         task:{taskId.slice(0, 8)}
-                      </span>
+                      </button>
                     )}
                   </div>
                 )}
@@ -208,14 +235,38 @@ export function FeedRail() {
                     <span className={a.status === "error" ? "text-red-300 truncate" : "truncate"}>
                       {a.type}
                     </span>
-                    <span className="opacity-60">{formatTime(a.timestamp)}</span>
+                    <div className="flex items-center gap-2">
+                      {a.metadata?.taskId && (
+                        <button
+                          onClick={() => setSelectedTaskId(String(a.metadata?.taskId))}
+                          className="px-1 border border-border-subtle rounded hover:text-moon-bone"
+                        >
+                          t:{String(a.metadata?.taskId).slice(0, 6)}
+                        </button>
+                      )}
+                      <span className="opacity-60">{formatTime(a.timestamp)}</span>
+                    </div>
                   </div>
                 ))}
               </div>
+              {taskDetail && (
+                <div className="border border-border-subtle rounded p-2 flex flex-col gap-1">
+                  <span className="text-moon-bone truncate">{taskDetail.title}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="opacity-70">{taskDetail.status}</span>
+                    <span className="opacity-70">{taskDetail.priority}</span>
+                  </div>
+                  <div className="opacity-60 truncate">
+                    {taskDetail.assignee ? `assignee: ${taskDetail.assignee}` : "unassigned"}
+                  </div>
+                </div>
+              )}
               <button
                 onClick={() => {
                   setSelectedRunId(null);
                   setRunTrace(null);
+                  setSelectedTaskId(null);
+                  setTaskDetail(null);
                 }}
                 className="self-start px-2 py-[2px] border border-border-subtle rounded hover:text-moon-bone"
               >
