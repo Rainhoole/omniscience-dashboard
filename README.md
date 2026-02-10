@@ -113,6 +113,9 @@ Edit `.env` with your Supabase connection string:
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres
 API_SECRET=your-random-secret-string
 ADMIN_PASSWORD=your-login-password
+
+# OpenClaw adapter ingress token (for /api/openclaw/events)
+OPENCLAW_ADAPTER_TOKEN=replace-with-strong-random-token
 ```
 
 ### 3. Initialize Database
@@ -146,6 +149,34 @@ report('file_ops', 'Created user-profile.tsx', 'success', 'Alpha', {
   path: 'src/user-profile.tsx'
 });
 ```
+
+### OpenClaw Integration (P0 adapter)
+
+Use `POST /api/openclaw/events` to ingest OpenClaw run events into:
+- `activities`
+- `timeline_events`
+- optional task status sync (`taskId + taskStatus`)
+
+Auth header:
+
+```http
+x-openclaw-token: <OPENCLAW_ADAPTER_TOKEN>
+```
+
+Example payload:
+
+```json
+{
+  "type": "task.completed",
+  "runId": "run_123",
+  "taskId": "<task-uuid>",
+  "agentId": "main",
+  "description": "OpenClaw run finished",
+  "taskStatus": "approved",
+  "metadata": { "source": "openclaw" }
+}
+```
+
 
 ## Scripts
 
