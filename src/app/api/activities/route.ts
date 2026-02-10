@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
-import { desc, eq, and, SQL } from "drizzle-orm";
+import { desc, eq, and, SQL, sql } from "drizzle-orm";
 import { verifyBotToken, unauthorized } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -9,10 +9,12 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "50");
   const source = searchParams.get("source");
   const type = searchParams.get("type");
+  const runId = searchParams.get("runId");
 
   const conditions: SQL[] = [];
   if (source) conditions.push(eq(activities.source, source));
   if (type) conditions.push(eq(activities.type, type));
+  if (runId) conditions.push(sql`${activities.metadata}->>'runId' = ${runId}`);
 
   const result = await db
     .select()

@@ -61,7 +61,10 @@ export function FeedRail() {
 
   useEffect(() => {
     const fetchActivities = () => {
-      fetch("/api/activities?limit=30")
+      const qs = selectedRunId
+        ? `/api/activities?limit=30&runId=${encodeURIComponent(selectedRunId)}`
+        : "/api/activities?limit=30";
+      fetch(qs)
         .then((r) => r.json())
         .then(setActivities)
         .catch(() => {});
@@ -70,7 +73,7 @@ export function FeedRail() {
     fetchActivities();
     const interval = setInterval(fetchActivities, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedRunId]);
 
   useEffect(() => {
     if (!selectedRunId) {
@@ -123,7 +126,11 @@ export function FeedRail() {
                 }}
               />
               <div className="flex flex-col gap-1 min-w-0">
-                <span className="text-moon-bone">{item.description}</span>
+                <span
+                  className={item.status === "error" ? "text-red-300" : "text-moon-bone"}
+                >
+                  {item.description}
+                </span>
                 <div className="text-moon-dim text-[10px]">
                   <span
                     className="uppercase tracking-wider opacity-70"
@@ -187,9 +194,33 @@ export function FeedRail() {
           ) : !runTrace ? (
             <div className="text-[10px] text-moon-dim">No trace data.</div>
           ) : (
-            <div className="text-[10px] text-moon-dim flex flex-col gap-1">
-              <span>Activities: {runTrace.activities.length}</span>
+            <div className="text-[10px] text-moon-dim flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span>Activities: {runTrace.activities.length}</span>
+                <span>
+                  Errors: {runTrace.activities.filter((a) => a.status === "error").length}
+                </span>
+              </div>
               <span>Timeline Events: {runTrace.timelineEvents.length}</span>
+              <div className="max-h-32 overflow-y-auto border border-border-subtle rounded p-2 flex flex-col gap-1">
+                {runTrace.activities.slice(0, 8).map((a) => (
+                  <div key={a.id} className="flex items-center justify-between gap-2">
+                    <span className={a.status === "error" ? "text-red-300 truncate" : "truncate"}>
+                      {a.type}
+                    </span>
+                    <span className="opacity-60">{formatTime(a.timestamp)}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedRunId(null);
+                  setRunTrace(null);
+                }}
+                className="self-start px-2 py-[2px] border border-border-subtle rounded hover:text-moon-bone"
+              >
+                Clear Run Filter
+              </button>
             </div>
           )}
         </div>
