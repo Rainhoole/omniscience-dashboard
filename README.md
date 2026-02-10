@@ -92,6 +92,8 @@ make db-seed
 
 ```bash
 make verify
+# or (if make is unavailable)
+npm run verify
 ```
 
 ### 6) Open app

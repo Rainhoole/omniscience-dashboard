@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { getBotColor } from "@/lib/bot-colors";
@@ -88,7 +88,7 @@ const TASK_STATUS_COLORS: Record<string, string> = {
 
 export default function AgentDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  // no router needed
   const id = params.id as string;
 
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -120,41 +120,45 @@ export default function AgentDetailPage() {
     }
   }, [id]);
 
-  const fetchTasks = useCallback(async (agentName: string) => {
-    try {
-      const res = await fetch(`/api/tasks?assignee=${encodeURIComponent(agentName)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTasks(Array.isArray(data) ? data : data.tasks || []);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const fetchActivities = useCallback(async (agentName: string) => {
-    try {
-      const res = await fetch(`/api/feed?scope=agent:${encodeURIComponent(agentName)}&limit=20`);
-      if (res.ok) {
-        const data = await res.json();
-        setActivities(Array.isArray(data) ? data : []);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+  // task/activity loading handled in effect below
 
   useEffect(() => {
-    setLoading(true);
-    fetchAgent().then(() => setLoading(false));
+    let alive = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAgent().finally(() => {
+      if (alive) setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
   }, [fetchAgent]);
 
   useEffect(() => {
-    if (agent?.name) {
-      fetchTasks(agent.name);
-      fetchActivities(agent.name);
-    }
-  }, [agent?.name, fetchTasks, fetchActivities]);
+    if (!agent?.name) return;
+
+    let alive = true;
+    const agentName = agent.name;
+
+    fetch(`/api/tasks?assignee=${encodeURIComponent(agentName)}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!alive) return;
+        setTasks(Array.isArray(data) ? data : data.tasks || []);
+      })
+      .catch(() => {});
+
+    fetch(`/api/feed?scope=agent:${encodeURIComponent(agentName)}&limit=20`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!alive) return;
+        setActivities(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {});
+
+    return () => {
+      alive = false;
+    };
+  }, [agent?.name]);
 
   const handleSaveConfig = async () => {
     if (!agent) return;

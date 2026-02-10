@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { getBotColor } from "@/lib/bot-colors";
 import { FeedRailScheduled } from "@/components/feed-rail-scheduled";
 
@@ -212,13 +212,13 @@ export function CalendarView() {
       .catch(() => {});
   }, []);
 
-  const goToToday = useCallback(() => {
+  const goToToday = () => {
     const now = new Date();
     setYear(now.getFullYear());
     setMonth(now.getMonth());
-  }, []);
+  };
 
-  const prevMonth = useCallback(() => {
+  const prevMonth = () => {
     setMonth((prev) => {
       if (prev === 0) {
         setYear((y) => y - 1);
@@ -226,9 +226,9 @@ export function CalendarView() {
       }
       return prev - 1;
     });
-  }, []);
+  };
 
-  const nextMonth = useCallback(() => {
+  const nextMonth = () => {
     setMonth((prev) => {
       if (prev === 11) {
         setYear((y) => y + 1);
@@ -236,7 +236,7 @@ export function CalendarView() {
       }
       return prev + 1;
     });
-  }, []);
+  };
 
   const days = buildCalendarDays(year, month, tasks);
 

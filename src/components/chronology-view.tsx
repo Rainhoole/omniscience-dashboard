@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { getBotColor } from "@/lib/bot-colors";
 
 interface TimelineEvent {
@@ -119,20 +119,25 @@ export function ChronologyView() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [agent, setAgent] = useState<AgentFilter>("all");
   const [range, setRange] = useState<RangeFilter>("7d");
-  const [loading, setLoading] = useState(false);
-
-  const fetchEvents = useCallback(() => {
-    setLoading(true);
-    fetch(`/api/timeline?agent=${agent}&range=${range}`)
-      .then((r) => r.json())
-      .then((data: TimelineEvent[]) => setEvents(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [agent, range]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    let alive = true;
+
+    fetch(`/api/timeline?agent=${agent}&range=${range}`)
+      .then((r) => r.json())
+      .then((data: TimelineEvent[]) => {
+        if (alive) setEvents(data);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [agent, range]);
 
   const groups = groupEvents(events);
   const stats = computeStats(events);
@@ -152,7 +157,10 @@ export function ChronologyView() {
         <div className="px-8 py-4 border-b border-border-subtle flex items-center gap-4">
           <select
             value={agent}
-            onChange={(e) => setAgent(e.target.value as AgentFilter)}
+            onChange={(e) => {
+              setLoading(true);
+              setAgent(e.target.value as AgentFilter);
+            }}
             className="bg-void-depth border border-border-subtle text-moon-bone text-[11px] font-mono px-3 py-1.5 rounded-sm focus:outline-none focus:border-flesh-dim appearance-none cursor-pointer"
           >
             {agentOptions.map((a) => (
@@ -166,7 +174,10 @@ export function ChronologyView() {
             {RANGES.map((r) => (
               <button
                 key={r}
-                onClick={() => setRange(r)}
+                onClick={() => {
+                  setLoading(true);
+                  setRange(r);
+                }}
                 className={`px-3 py-1 text-[10px] tracking-[0.15em] uppercase font-mono border transition-colors ${
                   range === r
                     ? "border-flesh-dim text-moon-bone bg-[rgba(196,164,150,0.08)]"
