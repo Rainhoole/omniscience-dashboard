@@ -157,6 +157,11 @@ Use `POST /api/openclaw/events` to ingest OpenClaw run events into:
 - `timeline_events`
 - optional task status sync (`taskId + taskStatus`)
 
+Use `POST /api/openclaw/ops` to ingest operator/ops actions (deploy/migrate/restart/rollback/git_push) into:
+- `audit_logs`
+- `activities`
+- `timeline_events`
+
 Auth header:
 
 ```http
